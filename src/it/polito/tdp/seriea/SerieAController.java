@@ -1,6 +1,7 @@
 package it.polito.tdp.seriea;
 
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -58,11 +59,16 @@ public class SerieAController {
 
     @FXML
     void doTrovaAnnataOro(ActionEvent event) {
+    	
+    	Season annata = model.calcolaAnnataDOro() ;
+    	txtResult.appendText(String.format("Annata d'oro: %s\n", annata.getDescription()));
 
     }
 
     @FXML
     void doTrovaCamminoVirtuoso(ActionEvent event) {
+    	List<Season> percorso = model.camminoVirtuoso() ;
+    	txtResult.appendText(percorso.toString());
 
     }
 

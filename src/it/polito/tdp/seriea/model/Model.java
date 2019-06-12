@@ -22,11 +22,12 @@ public class Model {
 
 	private Team squadraSelezionata;
 	private Map<Season, Integer> punteggi;
-	private List<Season> stagioniConsecutive ;
+	private List<Season> stagioniConsecutive;
 
 	private Graph<Season, DefaultWeightedEdge> grafo;
-	
-	private List<Season> percorsoBest ;
+
+	private List<Season> percorsoBest;
+	private int deltaPesi;
 
 	public Model() {
 		SerieADAO dao = new SerieADAO();
@@ -105,92 +106,114 @@ public class Model {
 			}
 		}
 
-		// trovo l'annata migliore
-		Season migliore = null;
-		int max = 0;
-		for (Season s : grafo.vertexSet()) {
-			int valore = pesoStagione(s);
-			if (valore > max) {
-				max = valore;
-				migliore = s;
+		if (grafo.vertexSet().isEmpty()) {
+			// caso particolare: nessuna stagione
+			this.deltaPesi = 0;
+			return null;
+		} else if (grafo.vertexSet().size() == 1) {
+			// caso particolare: se c'è solo una stagione
+			this.deltaPesi = 0;
+			/*
+			 * ugly trick to extract the only element in the set. See:
+			 * <https://stackoverflow.com/questions/5229137/the-correct-way-to-return-the-only-element-from-a-set>
+			 */
+			Season unica = grafo.vertexSet().iterator().next();
+			return unica;
+		} else {
+
+			// trovo l'annata migliore
+			Season migliore = null;
+			int max = 0;
+			for (Season s : grafo.vertexSet()) {
+				int valore = pesoStagione(s);
+				if (valore > max) {
+					max = valore;
+					migliore = s;
+				}
 			}
+			this.deltaPesi = max;
+			return migliore;
 		}
-		
-		return migliore ;
 
 	}
-	
+
+	public int getDeltaPesi() {
+		return this.deltaPesi;
+	}
+
 	private int pesoStagione(Season s) {
-		int somma = 0 ;
-		
-		for(DefaultWeightedEdge e: grafo.incomingEdgesOf(s)) {
-			somma = somma + (int)grafo.getEdgeWeight(e) ;
+		int somma = 0;
+
+		for (DefaultWeightedEdge e : grafo.incomingEdgesOf(s)) {
+			somma = somma + (int) grafo.getEdgeWeight(e);
 		}
 
-		for(DefaultWeightedEdge e: grafo.outgoingEdgesOf(s)) {
-			somma = somma - (int)grafo.getEdgeWeight(e) ;
+		for (DefaultWeightedEdge e : grafo.outgoingEdgesOf(s)) {
+			somma = somma - (int) grafo.getEdgeWeight(e);
 		}
-		
-		return somma ;
+
+		return somma;
+	}
+
+	public int getPunteggio(Season s) {
+		return this.punteggi.get(s) ;
 	}
 	
 	public List<Season> camminoVirtuoso() {
-		
+
 		// trova le stagioni consecutive
-		this.stagioniConsecutive = new ArrayList<Season>(punteggi.keySet()) ;
-		Collections.sort(this.stagioniConsecutive) ;
-		
+		this.stagioniConsecutive = new ArrayList<Season>(punteggi.keySet());
+		Collections.sort(this.stagioniConsecutive);
+
 		// prepara le variabili utili alla ricorsione
-		List<Season> parziale = new ArrayList<Season>() ;
-		this.percorsoBest = new ArrayList<>() ; 
-		
+		List<Season> parziale = new ArrayList<Season>();
+		this.percorsoBest = new ArrayList<>();
+
 		// Itera al livello zero
-		for(Season s: grafo.vertexSet()) {
-			parziale.add(s) ;
-			cerca(1, parziale) ;
-			parziale.remove(0) ;
+		for (Season s : grafo.vertexSet()) {
+			parziale.add(s);
+			cerca(1, parziale);
+			parziale.remove(0);
 		}
-		
-		return percorsoBest ;
+
+		return percorsoBest;
 	}
 
-	
 	/*
 	 * RICORSIONE
 	 * 
-	 * Soluzione parziale: Lista di Season (lista di vertici)
-	 * Livello ricorsione: lunghezza della lista
-	 * Casi terminali: non trova altri vertici da aggiungere 
-	 * 		-> verifica se il cammino ha lunghezza massima tra quelli visti finora
-	 * Generazione delle soluzioni: vertici connessi all'ultimo vertice del percorso (con 
-	 * arco orientato nel verso giusto), non ancora parte del percorso, relativi a stagioni 
-	 * consecutive.
+	 * Soluzione parziale: Lista di Season (lista di vertici) Livello ricorsione:
+	 * lunghezza della lista Casi terminali: non trova altri vertici da aggiungere
+	 * -> verifica se il cammino ha lunghezza massima tra quelli visti finora
+	 * Generazione delle soluzioni: vertici connessi all'ultimo vertice del percorso
+	 * (con arco orientato nel verso giusto), non ancora parte del percorso,
+	 * relativi a stagioni consecutive.
 	 */
-	
+
 	private void cerca(int livello, List<Season> parziale) {
-		boolean trovato = false ;
-		
+		boolean trovato = false;
+
 		// genera nuove soluzioni
-		Season ultimo = parziale.get(livello-1) ;
-		
-		for(Season prossimo : Graphs.successorListOf(grafo, ultimo)) {
-			if(!parziale.contains(prossimo)) {
-				if( stagioniConsecutive.indexOf(ultimo)+1 ==
-						stagioniConsecutive.lastIndexOf(prossimo)) {
+		Season ultimo = parziale.get(livello - 1);
+
+		for (Season prossimo : Graphs.successorListOf(grafo, ultimo)) {
+			if (!parziale.contains(prossimo)) {
+				if (stagioniConsecutive.indexOf(ultimo) + 1 == stagioniConsecutive.lastIndexOf(prossimo)) {
 					// candidato accettabile -> fai ricorsione
-					trovato = true ;
-					parziale.add(prossimo) ;
-					cerca(livello+1, parziale) ;
-					parziale.remove(livello) ;
+					trovato = true;
+					parziale.add(prossimo);
+					cerca(livello + 1, parziale);
+					parziale.remove(livello);
 				}
 			}
 		}
-		
+
 		// valuta caso terminale
-		if(!trovato) {
-			if(parziale.size()>percorsoBest.size()) {
-				percorsoBest = new ArrayList<Season>(parziale) ; // clona il best
+		if (!trovato) {
+			if (parziale.size() > percorsoBest.size()) {
+				percorsoBest = new ArrayList<Season>(parziale); // clona il best
 			}
 		}
 	}
+
 }

@@ -8,6 +8,8 @@ import java.util.ResourceBundle;
 import it.polito.tdp.seriea.model.Model;
 import it.polito.tdp.seriea.model.Season;
 import it.polito.tdp.seriea.model.Team;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -55,20 +57,29 @@ public class SerieAController {
     	for(Season s: punteggi.keySet()) {
     		txtResult.appendText(String.format("%s: %d\n", s.getDescription(), punteggi.get(s)) );
     	}
+    
+        btnTrovaAnnataOro.setDisable(false);
+        btnTrovaCamminoVirtuoso.setDisable(true);
+
     }
 
     @FXML
     void doTrovaAnnataOro(ActionEvent event) {
     	
     	Season annata = model.calcolaAnnataDOro() ;
-    	txtResult.appendText(String.format("Annata d'oro: %s\n", annata.getDescription()));
+    	int deltaPesi = model.getDeltaPesi() ;
+    	txtResult.appendText(String.format("Annata d'oro: %s (differenza pesi %d)\n", annata.getDescription(), deltaPesi));
 
+        btnTrovaAnnataOro.setDisable(false);
+        btnTrovaCamminoVirtuoso.setDisable(false);
     }
 
     @FXML
     void doTrovaCamminoVirtuoso(ActionEvent event) {
     	List<Season> percorso = model.camminoVirtuoso() ;
-    	txtResult.appendText(percorso.toString());
+    	for(Season s: percorso) {
+    		txtResult.appendText(String.format("%s: %d\n", s.getDescription(), model.getPunteggio(s)));
+    	}
 
     }
 
@@ -87,5 +98,18 @@ public class SerieAController {
         assert btnTrovaCamminoVirtuoso != null : "fx:id=\"btnTrovaCamminoVirtuoso\" was not injected: check your FXML file 'SerieA.fxml'.";
         assert txtResult != null : "fx:id=\"txtResult\" was not injected: check your FXML file 'SerieA.fxml'.";
 
+        // i bottoni Annata d'oro e Cammino Virtuoso si abilitano solo dopo avere scelto la squadra
+        btnTrovaAnnataOro.setDisable(true);
+        btnTrovaCamminoVirtuoso.setDisable(true);
+
+        // disable buttons when team is changed
+        // https://stackoverflow.com/a/35282753/986709
+        boxSquadra.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Team>() {
+			@Override
+			public void changed(ObservableValue<? extends Team> observable, Team oldValue, Team newValue) {
+		        btnTrovaAnnataOro.setDisable(true);
+		        btnTrovaCamminoVirtuoso.setDisable(true);				
+			}
+		});
     }
 }

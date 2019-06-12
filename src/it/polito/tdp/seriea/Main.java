@@ -1,6 +1,5 @@
 package it.polito.tdp.seriea;
 	
-import it.polito.tdp.seriea.model.Match;
 import it.polito.tdp.seriea.model.Model;
 import javafx.application.Application;
 import javafx.stage.Stage;

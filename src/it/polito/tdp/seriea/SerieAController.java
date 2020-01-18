@@ -5,7 +5,13 @@
 package it.polito.tdp.seriea;
 
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
+
+import it.polito.tdp.seriea.model.Model;
+import it.polito.tdp.seriea.model.Season;
+import it.polito.tdp.seriea.model.Team;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -14,6 +20,7 @@ import javafx.scene.control.TextArea;
 
 public class SerieAController {
 
+	private Model model;
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
 
@@ -21,7 +28,7 @@ public class SerieAController {
     private URL location;
 
     @FXML // fx:id="boxSquadra"
-    private ChoiceBox<?> boxSquadra; // Value injected by FXMLLoader
+    private ChoiceBox<Team> boxSquadra; // Value injected by FXMLLoader
 
     @FXML // fx:id="btnSelezionaSquadra"
     private Button btnSelezionaSquadra; // Value injected by FXMLLoader
@@ -35,14 +42,32 @@ public class SerieAController {
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
 
+    public void setModel(Model model) {
+    	this.model = model;
+    	getComboItems();
+    	btnTrovaAnnataOro.setDisable(true);
+    	btnTrovaCamminoVirtuoso.setDisable(true);
+    }
+    
+    public void getComboItems() {
+    	List<Team> teams = model.listAllTeams();
+    	boxSquadra.getItems().addAll(teams);
+    }
     @FXML
     void doSelezionaSquadra(ActionEvent event) {
-
+    	txtResult.clear();
+    	Team squadra = boxSquadra.getValue();
+    	Map<Season, Integer> punteggi = model.calcolaPunteggi(squadra);
+    	for(Season s: punteggi.keySet())
+    		txtResult.appendText(String.format("%s: %d\n", s.getDescription(), punteggi.get(s)));
     }
 
     @FXML
     void doTrovaAnnataOro(ActionEvent event) {
-
+    	Season annata = model.trovaAnnataDOro();
+    	int deltaPesi = model.getDeltaPesi();
+    	txtResult.appendText(String.format("Annata d'oro: %s (differenza pesi %d)", annata.getDescription(),deltaPesi));
+    	
     }
 
     @FXML
